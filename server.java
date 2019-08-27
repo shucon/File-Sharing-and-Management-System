@@ -167,7 +167,7 @@ class AcceptClient extends Thread {
                         try {
                             theDir.mkdir();
                             System.out.println("Folder Created");
-                        } catch (CreateFolderException e) {
+                        } catch (Exception e) {
                             System.out.println(e);
                             System.out.println("Folder Creation unsuccessful");
                         }
@@ -181,30 +181,11 @@ class AcceptClient extends Thread {
                         Path temp = Files.move(Paths.get(pathsrc), Paths.get(pathdst));
                         System.out.println("File moved successfully"); 
                         dout.writeUTF("File moved successfully"); 
-                    } catch (FileMoveException e) { 
+                    } catch (Exception e) { 
                         System.out.println(e); 
                         System.out.println("Failed to move the file");
                         dout.writeUTF("Failed to move the file"); 
                     } 
-                // } else if (command.equals("LOGOUT")) {
-                //     Chatroom C=server.ConnectedChatroom.get(LoginName);
-                //     if (C != null) {
-                //         String outp=server.ConnectedChatroom.get(LoginName).Leave(LoginName);
-                //         if (outp.equals("DEL")) {
-                //             server.Chatrooms.remove(C);
-                //         } else {
-                //             dout.writeUTF(outp);
-                //         }
-                //         din.close();
-                //         dout.close();
-                //         ClientSocket.close();
-                //         if (server.Chatrooms.contains(C)) {
-                //             C.Notify(LoginName+" left the chatroom",LoginName);
-                //         }
-                //         C = null;
-                //     }
-                //     server.LoginNames.remove(LoginName);
-                //     server.ClientSockets.remove(ClientSocket) ;
                 } else if (command.equals("create_group")) {
                     String chatroomName=tokenedcommand.nextToken();
                     if (server.Chatrooms.indexOf(chatroomName) == -1) {
@@ -257,237 +238,119 @@ class AcceptClient extends Thread {
                     if (i == server.Chatrooms.size()) {
                         dout.writeUTF(chatroomName+" doesn't exist");
                     }         
-                // } else if (command.equals("share_msg_in_group")) {
-                //     String chatroomName=tokenedcommand.nextToken();
-                //     String msgfromClient=LoginName+"@"+chatroomName+":";
-                //     int i=0;
-                //     for (i=0;i<server.Chatrooms.size();i++){
-                //         if (server.Chatrooms.elementAt(i).name.equals(chatroomName)){
-                //             Chatroom C = server.Chatrooms.elementAt(i);
-                //             if (C.ListUsers().indexOf(LoginName)==-1){
-                //                 dout.writeUTF("You are not part of this group");
-                //                 break;
-                //             }
-                //             while(tokenedcommand.hasMoreTokens()) 
-                //                 msgfromClient=msgfromClient+" "+tokenedcommand.nextToken();
-                //             C.Notify(msgfromClient,LoginName);
-                //             break;
-                //         }
-                //     }
-                //     if (i == server.Chatrooms.size()) {
-                //         dout.writeUTF(chatroomName+" doesn't exist");
-                //     }
                 } else if (command.equals("share_msg")) {
-                    int i;
-                    String msg="";
+                    int i = 0;
+                    String msg = "";
                     while(tokenedcommand.hasMoreTokens()) {
                         msg = msg + " " + tokenedcommand.nextToken();
                     } 
-                    for (i = 0; i < server.Chatrooms.size(); i++) {
+                    while (i < server.Chatrooms.size() ) {
                         Chatroom C = server.Chatrooms.elementAt(i);
                         if (C.ListUsers().indexOf(LoginName) != -1) {
-                            String msgfromClient = LoginName + "@" + C.name + ":";
+                            String msgfromClient = "Message From " + LoginName + "@" + C.name + ":";
                             msgfromClient += msg;
                             C.Notify(msgfromClient, LoginName);
                         }
+                        i++;
                     }
                 } else if (command.equals("list_detail")) {
-                    String chatroomName=tokenedcommand.nextToken();
+                    int i;
                     String outp="";
-                    int i=0;
+                    String chatroomName=tokenedcommand.nextToken();
                     for (i=0;i<server.Chatrooms.size();i++){
                         if (server.Chatrooms.elementAt(i).name.equals(chatroomName)){
                             Chatroom C = server.Chatrooms.elementAt(i);
                             Vector<String> outpl=C.ListUsers();
-                            String out="";
-                            for (int j=0;j<outpl.size();j++){
-                                String name=outpl.elementAt(j);
-                                outp+= "User: "+name+"\n";
-                                File folder = new File("./"+name);
+                            int j = 0;
+                            while (j<outpl.size()) {
+                                String name = outpl.elementAt(j);
+                                outp += "Username: ";
+                                outp += name + "\n";
+                                File folder = new File("./" + name);
                                 File[] listOfFiles = folder.listFiles();
-                                if (listOfFiles.length!=0)
-                                    outp+="Files:\n";
-                                for (int k = 0; k < listOfFiles.length; k++) {
-                                    if (listOfFiles[k].isFile()) 
-                                    {
-                                        outp+=listOfFiles[k].getName() + "\n";
-                                    }
-                                    else if (listOfFiles[k].isDirectory())
-                                    {
+                                if (listOfFiles.length >= 1) {
+                                    outp += "Files:\n";
+                                }
+                                int k = 0;
+                                while (k < listOfFiles.length) {    
+                                    if (listOfFiles[k].isFile()) {
+                                        outp += listOfFiles[k].getName();
+                                        outp += "\n";
+                                    } else if (listOfFiles[k].isDirectory()) {
                                         String subdir = listOfFiles[k].getName();
                                         File sbfolder = new File(folder+"/"+subdir);
                                         File[] sblistOfFiles = sbfolder.listFiles();
-                                        for (int p=0;p<sblistOfFiles.length;p++)
-                                            outp+=subdir+"/"+sblistOfFiles[p].getName()+"\n";
+                                        for (int p = 0; p < sblistOfFiles.length; p++) {
+                                            outp += subdir + "/";
+                                            outp += sblistOfFiles[p].getName() + "\n";
+                                        }
                                     }
+                                    k++;
                                 }
+                                j++;
                             }
                             break;
                         }
                     }
                     if (i==server.Chatrooms.size()) dout.writeUTF(chatroomName+" doesn't exist");
                     dout.writeUTF(outp);
+                } else if(command.equals("get_file")) {
+                    int i = 0;
+                    String fl1 = tokenedcommand.nextToken();
+                    String[] flSplit = fl1.split("/",3);
+                    String groupname = flSplit[0];
+                    String fileUser=flSplit[1];
+                    // for(i = 0; i < server.Chatrooms.size(); i++){
+                    while (i < server.Chatrooms.size()) {    
+                        Chatroom C = server.Chatrooms.elementAt(i);
+                        if(C.name.equals(groupname)) {
+                            if(C.ListUsers().indexOf(fileUser) == -1 || C.ListUsers().indexOf(LoginName) == -1){
+                                String outputError = "Either you or the user: "+fileUser+" doesn't belong to this group: " + groupname;
+                                dout.writeUTF(outputError);
+                                break;
+                            }
+                            String fl = flSplit[1] + "/" + flSplit[2];
+                            File file = new File(fl);
+                            long fileLength =  file.length();
+                            FileInputStream fpin = new FileInputStream(file);
+                            BufferedInputStream bpin = new BufferedInputStream(fpin);
+                            String[] justnamear = fl.split("/",0);
+                            String justname = justnamear[justnamear.length-1];
+                            long current=0;
+                            String outputAnswer = "FILE "+justname+" LENGTH " + fileLength;
+                            dout.writeUTF(outputAnswer);
+                            System.out.println(outputAnswer);
+                            System.out.println(fileLength);
+                            while (current != fileLength) {
+                                int size;
+                                if(fileLength - current >= 1000) {
+                                    size = 1000;
+                                    current = size + current;
+                                } else {
+                                    size = (int)(fileLength-current);
+                                    current=fileLength;
+                                }
+                                byte[] file_contents = new byte[size];
+                                bpin.read(file_contents, 0, size);
+                                dout.write(file_contents);
+                                String progress = "File sending "+(current*100/fileLength)+"% complete";
+                                System.out.println(progress);
+                            }
+                            System.out.println("File Sent");                       
+                            break;
+                        }
+                        i++;
+                    }
+                    System.out.println("Check");
+                    if (i == server.Chatrooms.size()) {
+                        dout.writeUTF(groupname+" doesn't exist");
+                    }
+                } else {
+                    dout.writeUTF("Unrecognised command, please read the reference PDF file.");
                 }
-                // else if (command.equals("list"))
-                // {
-                //     String nxtcomm=tokenedcommand.nextToken();
-                //     if (nxtcomm.equals("chatrooms"))
-                //     {
-                //         String outp="";
-                //         if (server.Chatrooms.size()==0) dout.writeUTF("No Chatrooms exist");
-                //         else
-                //         {
-                //             for (int i=0;i<server.Chatrooms.size();i++) outp=outp+server.Chatrooms.elementAt(i).name+"\n";
-                //             dout.writeUTF(outp);
-                //         }
-                //     }
-                //     else if (nxtcomm.equals("users"))
-                //     {
-                //         if (server.ConnectedChatroom.get(LoginName)==null) dout.writeUTF("You are not part of any chatroom");
-                //         else
-                //         {
-                //             Vector<String> outpl=server.ConnectedChatroom.get(LoginName).ListUsers();
-                //             String outp="";
-                //             for (int i=0;i<outpl.size();i++)outp=outp+outpl.elementAt(i)+"\n";
-                //             dout.writeUTF(outp);
-                //         }
-                //     }
-                //     else {dout.writeUTF("Unrecognised Command");}
-                // }
-                // else if (command.equals("join"))
-                // {
-                //     String chatroomName=tokenedcommand.nextToken();
-                //     if (server.ConnectedChatroom.get(LoginName)!=null) dout.writeUTF("You are already part of chatroom "+server.ConnectedChatroom.get(LoginName));
-                //     else
-                //     {
-                //         int i=0;
-                //         for (i=0;i<server.Chatrooms.size();i++) if (server.Chatrooms.elementAt(i).name.equals(chatroomName))
-                //         {
-                //             String outp=server.Chatrooms.elementAt(i).Join(LoginName);
-                //             dout.writeUTF(outp); server.Chatrooms.elementAt(i).Notify(LoginName+" joined the chatroom",LoginName); break;
-                //         }
-                //         if (i==server.Chatrooms.size()) dout.writeUTF(chatroomName+" doesn't exist");
-                //     }
-                // }
-                // else if (command.equals("leave"))
-                // {
-                //     if (server.ConnectedChatroom.get(LoginName)==null) dout.writeUTF("You are not part of any chatroom");
-                //     else
-                //     {
-                //         Chatroom c = server.ConnectedChatroom.get(LoginName);
-                //         String name_=c.name;
-                //         String outp = server.ConnectedChatroom.get(LoginName).Leave(LoginName);
-                //         c.Notify(LoginName+" left the chatroom",LoginName);
-                //         if (outp.equals("DEL"))
-                //         {
-                //             server.Chatrooms.remove(c); c=null;
-                //             dout.writeUTF("You left Chatroom "+name_+'\n'+name_+" deleted");
-                //         }
-                //         else dout.writeUTF(outp);
-                //     }
-                // }
-                // else if (command.equals("add"))
-                // {
-                //     String user = tokenedcommand.nextToken();
-                //     if (server.ConnectedChatroom.get(LoginName)==null) dout.writeUTF("You are not a part of any chatroom");
-                //     else
-                //     {
-                //         String outp = server.ConnectedChatroom.get(LoginName).Add(user);
-                //         if (!outp.contains("Connot"))
-                //             server.ConnectedChatroom.get(LoginName).Notify(LoginName+" added "+user+" to chatroom "+server.ConnectedChatroom.get(LoginName).name,LoginName);
-                //         dout.writeUTF(outp);
-                //     }
-                // }
-                // else if (command.equals("reply"))
-                // {
-                //     StringTokenizer st = new StringTokenizer(commandfromClient);
-                //     String cmd=st.nextToken(),fl,tp;
-                //     boolean isFile=false;
-                //     if (st.hasMoreTokens())
-                //     {
-                //         fl=st.nextToken();
-                //         if (st.hasMoreTokens())
-                //         {
-                //             tp=st.nextToken();
-                //             if (tp.equals("tcp"))
-                //             {
-                //                 isFile=true;
-                //                 //File transfer
-                //                 Chatroom C = server.ConnectedChatroom.get(LoginName);
-                //                 if (C==null) dout.writeUTF("You are not part of any chatroom");
-                //                 else
-                //                 {
-                //                     String st_ = din.readUTF(); StringTokenizer stt = new StringTokenizer(st_); stt.nextToken() ; int fileLength = Integer.parseInt(stt.nextToken());
-                //                     StringTokenizer fileName = new StringTokenizer(fl,"/"); while(fileName.hasMoreTokens())fl=fileName.nextToken();
-                //                     C.Notify("FILE "+fl+" TCP  LENGTH "+fileLength,LoginName);
-                //                     byte[] file_contents = new byte[1000];
-                //                     int bytesRead=0,size=1000;
-                //                     if (size>fileLength)size=fileLength;
-                //                     while((bytesRead=din.read(file_contents,0,size))!=-1 && fileLength>0)
-                //                     {
-                //                         for (int i=0;i<C.Members.size();i++)
-                //                         {
-                //                             if (!C.Members.elementAt(i).equals(LoginName))
-                //                             {
-                //                                 DataOutputStream senddout = new DataOutputStream(server.ClientSockets.elementAt(server.LoginNames.indexOf(C.Members.elementAt(i))).getOutputStream());
-                //                                 senddout.write(file_contents,0,size);
-                //                             }
-                //                         }
-                //                         fileLength-=size; if (size>fileLength) size=fileLength;
-                //                     }
-                //                     System.out.println("Sent");
-                //                 }
-                //             }
-                //             else if (tp.equals("udp"))
-                //             {
-                //                 isFile=true;
-                //                 //File transfer
-                //                 Chatroom C = server.ConnectedChatroom.get(LoginName);
-                //                 if (C==null) dout.writeUTF("You are not part of any chatroom");
-                //                 else
-                //                 {
-                //                     String st_ = din.readUTF(); StringTokenizer stt = new StringTokenizer(st_); stt.nextToken() ; int fileLength = Integer.parseInt(stt.nextToken());
-                //                     StringTokenizer fileName = new StringTokenizer(fl,"/"); while(fileName.hasMoreTokens())fl=fileName.nextToken();
-                //                     C.Notify("FILE "+fl+" UDP LENGTH "+fileLength,LoginName);
-                //                     int size = 1024;
-                //                     byte[] file_contents = new byte[size];
-                //                     if (size>fileLength)size=fileLength;
-                //                     //System.out.println(fileLength);
-                //                     DatagramPacket packetUDP;
-                //                     while(fileLength>0)
-                //                     {
-                //                         packetUDP = new DatagramPacket(file_contents,size);
-                //                         SocUDP.receive(packetUDP);
-                //                         for (int i=0;i<C.Members.size();i++)
-                //                         {
-                //                             if (!C.Members.elementAt(i).equals(LoginName))
-                //                             {
-                //                                 packetUDP = new DatagramPacket(file_contents,size,InetAddress.getByName("127.0.0.1"),Integer.parseInt((server.Ports.elementAt(server.LoginNames.indexOf(C.Members.elementAt(i)))).toString()));
-                //                                 SocUDP.send(packetUDP);
-                //                             }
-                //                         }
-                //                         fileLength-=size; if (size>fileLength) size=fileLength;
-                //                     }
-                //                 }
-                //             }
-                //         }
-                //     }
-                //     if (isFile==false)
-                //     {
-                //         String msgfromClient=LoginName+":";
-                //         Chatroom C = server.ConnectedChatroom.get(LoginName);
-                //         while(tokenedcommand.hasMoreTokens()) msgfromClient=msgfromClient+" "+tokenedcommand.nextToken();
-                //         if (C==null) dout.writeUTF("You are not part of any chatroom");
-                //         else C.Notify(msgfromClient,LoginName);
-                //     }
-                // }
-                else
-                {
-                    dout.writeUTF("Unrecognised command");
-                }
-            }
-            catch(Exception e) {
-                e.printStackTrace(System.out) ; break;
+            } catch(Exception e) {
+                e.printStackTrace(System.out);
+                break;
             }
         }
     }
@@ -536,8 +399,9 @@ class Chatroom {
                     Socket sendSoc = server.ClientSockets.elementAt(server.LoginNames.indexOf(this.Members.elementAt(i)));
                     DataOutputStream senddout = new DataOutputStream(sendSoc.getOutputStream());
                     senddout.writeUTF(msg);
+                } catch(Exception e) {
+                    System.out.println(e);
                 }
-                catch(Exception e){ int ii=0;  }
             }
         }
     }

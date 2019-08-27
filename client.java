@@ -4,11 +4,17 @@ import java.net.* ;
 import java.util.* ;
 
 public class client {
-    public static String ip = "127.0.0.1";
+    public static String ip;
     public static int port = 6661;
     public static DatagramSocket clientSocUDP;
     public static void main(String args[]) {
         try {
+            if (args.length < 1) {
+                System.out.println("IP not provided. Running on 127.0.0.1");
+                ip = "127.0.0.1";
+            } else {
+                ip = args[0];
+            }
             clientSocUDP = new DatagramSocket();
             Socket clientSoc;
             clientSoc = new Socket(ip,6666) ;
@@ -23,15 +29,6 @@ public class client {
             DatagramPacket initial = new DatagramPacket(file_contents,file_contents.length,InetAddress.getByName(ip),port);
             clientSocUDP.send(initial);
             String LoginName;
-            // if (args.length==0)
-            // {
-            //     System.out.println("No Username given\n"); System.exit(0);
-            // }
-            // LoginName=args[0];
-            // dout.writeUTF(LoginName);
-
-            //Recieve messages
-            // new Thread(new RecievedMessagesHandler (din,LoginName)).start();
 
             //Send messages
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
@@ -41,15 +38,16 @@ public class client {
                     inputLine = bufferedReader.readLine();
                     dout.writeUTF(inputLine);
                     if (inputLine.equals("LOGOUT")) {
-                        clientSoc.close(); din.close(); dout.close();
+                        dout.close();
+                        din.close();
+                        clientSoc.close();
                         System.out.println("Logged Out");
                         System.exit(0);
                     }
-                    StringTokenizer tokenedcommand = new StringTokenizer(inputLine);
                     //check file transfer
                     String comm;
                     String fl;
-                    String typ;
+                    StringTokenizer tokenedcommand = new StringTokenizer(inputLine);
                     comm = tokenedcommand.nextToken();
                     if (comm.equals("create_user")) {
                         if (tokenedcommand.hasMoreTokens()) {
@@ -58,7 +56,7 @@ public class client {
                             new Thread(new RecievedMessagesHandler (din,LoginName)).start();
 
                         } else {
-                            System.out.println("Error! No Username given");
+                            System.out.println("Error! No Username argument provided.");
                         }
                     } else if (comm.equals("upload")) {
                         fl = tokenedcommand.nextToken();
@@ -84,7 +82,7 @@ public class client {
                                 System.out.println("Sending file ..."+(current*100/fileLength)+"% complete");
                             }
                             System.out.println("File Sent successfully");                       
-                        } catch (FileSendingException e) {
+                        } catch (Exception e) {
                             System.out.println(e);                       
                             System.out.println("File sending unsuccessfull");                       
                         }
@@ -96,7 +94,6 @@ public class client {
                         BufferedInputStream bpin = new BufferedInputStream(fpin);
                         long current = 0;
                         long fileLength = file.length();
-                        long start =System.nanoTime();
                         dout.writeUTF("LENGTH " + fileLength);
                         try {
                             while(current != fileLength) {
@@ -113,70 +110,11 @@ public class client {
                                 System.out.println("File sending "+(current*100/fileLength)+"% complete");
                             }
                             System.out.println("File Sent");
-                        } catch (FileSendingException e) {
+                        } catch (Exception e) {
                             System.out.println(e);                       
                             System.out.println("File sending unsuccessfull");                       
                         }
                     }
-                    // else if (comm.equals("reply"))
-                    // {
-                    //     boolean isFile=false;
-                    //     if (tokenedcommand.hasMoreTokens())
-                    //     {
-                    //         fl=tokenedcommand.nextToken();
-                    //         if (tokenedcommand.hasMoreTokens())
-                    //         {
-                    //             typ=tokenedcommand.nextToken();
-                    //             //file transfer
-                    //             if (typ.equals("tcp"))
-                    //             {
-                    //                 isFile=true;
-                    //                 File file = new File(fl);
-                    //                 FileInputStream fpin = new FileInputStream(file);
-                    //                 BufferedInputStream bpin = new BufferedInputStream(fpin);
-                    //                 long fileLength =  file.length(), current=0, start = System.nanoTime();
-                    //                 dout.writeUTF("LENGTH "+fileLength);
-                    //                 while(current!=fileLength)
-                    //                 {
-                    //                     int size=1000;
-                    //                     if (fileLength - current >= size) current+=size;
-                    //                     else {
-                    //                         size = (int)(fileLength-current);
-                    //                         current=fileLength;
-                    //                     }
-                    //                     file_contents = new byte[size];
-                    //                     bpin.read(file_contents,0,size); dout.write(file_contents);
-                    //                     System.out.println("Sending file ..."+(current*100/fileLength)+"% complete");
-                    //                 }
-                    //                 System.out.println("File Sent");
-                    //             }
-                    //             else if (typ.equals("udp"))
-                    //             {
-                    //                 int size=1024;
-                    //                 isFile=true;
-                    //                 File file = new File(fl);
-                    //                 FileInputStream fpin = new FileInputStream(file);
-                    //                 BufferedInputStream bpin = new BufferedInputStream(fpin);
-                    //                 long fileLength = file.length(), current =0, start =System.nanoTime();
-                    //                 dout.writeUTF("LENGTH "+fileLength);
-                    //                 while(current!=fileLength)
-                    //                 {
-                    //                     if (fileLength - current >= size) current+=size;
-                    //                     else {
-                    //                         size = (int)(fileLength-current);
-                    //                         current=fileLength;
-                    //                     }
-                    //                     file_contents = new byte[size];
-                    //                     bpin.read(file_contents,0,size);
-                    //                     DatagramPacket sendPacket = new DatagramPacket(file_contents,size,InetAddress.getByName(ip),port);
-                    //                     clientSocUDP.send(sendPacket);
-                    //                     System.out.println("Sending file ..."+(current*100/fileLength)+"% complete");
-                    //                 }
-                    //                 System.out.println("File Sent");
-                    //             }
-                    //         }
-                    //     }
-                    // }
                 } catch (Exception e) { 
                     System.out.println(e);
                     break;
@@ -193,7 +131,8 @@ public class client {
 }
 
 class RecievedMessagesHandler implements Runnable {
-    private DataInputStream server; private String LoginName;
+    private String LoginName;
+    private DataInputStream server;
     public RecievedMessagesHandler(DataInputStream server,String LoginName) {
         this.server = server; this.LoginName = LoginName;
     }
@@ -205,48 +144,35 @@ class RecievedMessagesHandler implements Runnable {
                 inputLine=server.readUTF();
                 StringTokenizer st = new StringTokenizer(inputLine);
                 if (st.nextToken().equals("FILE")) {
-                    //File recienve
+                    System.out.println(inputLine);
                     String fileName=st.nextToken();
-                    String typ=st.nextToken();
                     st.nextToken();
                     int fileLength = Integer.parseInt(st.nextToken());
                     System.out.println("Recieving file " + fileName);
                     byte[] file_contents = new byte[1000];
-                    FileOutputStream fpout = new FileOutputStream(LoginName + "/" + fileName);
+                    FileOutputStream fpout = new FileOutputStream(fileName);
                     BufferedOutputStream bpout = new BufferedOutputStream(fpout);
-                    DatagramPacket receivePacket;
-                    if (typ.equals("TCP")) {
-                        int size=1000;
-                        if (size>fileLength)size=fileLength;
-                        while((bytesRead=server.read(file_contents,0,size))!=-1 && fileLength>0) {
-                            bpout.write(file_contents,0,size);
-                            fileLength-=size; if (size>fileLength)size=fileLength;
-                        }
-                        bpout.flush();
-                        System.out.println("File Recieved");
-                    } else {
-                        int size = 1024;
-                        file_contents = new byte[size];
-                        if (size>fileLength) size=fileLength;
-                        System.out.println(fileLength);
-                        while(fileLength>0)
-                        {
-                            receivePacket  = new DatagramPacket(file_contents, size);
-                            System.out.println("s");
-                            client.clientSocUDP.receive(receivePacket);
-                            System.out.println("r");
-                            bpout.write(file_contents,0,size);
-                            System.out.println("w");
-                            fileLength-=size; if (size>fileLength)size=fileLength;
-                        }
-                        bpout.flush();
-                        System.out.println("File Recieved");
+                    int size=1000;
+                    if(size > fileLength) {
+                        size = fileLength;
                     }
-                }
-                else
+                    int bytesRead;
+                    while((bytesRead=server.read(file_contents,0,size))!=-1 && fileLength>0) {   
+                        bpout.write(file_contents,0,size);
+                        fileLength-=size;
+                        if(size > fileLength) {
+                            size=fileLength;
+                        }
+                    }
+                    bpout.flush();
+                    System.out.println("File Recieved");
+                } else {
                     System.out.println(inputLine);
+                }
+            } catch(Exception e) {
+                e.printStackTrace(System.out);
+                break;
             }
-            catch(Exception e) {e.printStackTrace(System.out); break;}
         }
     }
 }
