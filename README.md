@@ -1,4 +1,4 @@
-# File Sharing and Management System over
+# File Sharing and Management System
 
 ## Version Details
 openjdk version "11.0.4" 2019-07-16
